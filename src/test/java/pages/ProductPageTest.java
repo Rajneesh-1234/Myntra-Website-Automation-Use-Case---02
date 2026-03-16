@@ -1,14 +1,13 @@
 package pages;
 
-import java.util.List;
-
-import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import base.BaseTest;
 import base.DriverFactory;
 
+@Listeners(listeners.TestListener.class)
 public class ProductPageTest extends BaseTest {
 	private ProductPage product;
 
@@ -17,94 +16,131 @@ public class ProductPageTest extends BaseTest {
 		product = new ProductPage(DriverFactory.getDriver());
 	}
 
+	String filePath = "testData/products.txt";
+	String[] products = ReadFileData.readProducts(filePath);
+
 	@Test(priority = 1)
-	public void navigateToTshirtsTest() {
-		product.navigateToTshirts();
+	public void searchProductTest() {
+		String itemName = products[0];
+		product.searchProduct(itemName);
 	}
 
 	@Test(priority = 2)
-	public void firstFiveProductPricesTest() {
-		List<Integer> priceList = product.getFirstFiveProductPrices();
-		System.out.println("First Five PriceList: ");
-		System.out.println(priceList);
+	public void allProductListTest() {
+		product.allProductList();
 	}
 
 	@Test(priority = 3)
-	public void sortProductByPriceLowToHighTest() {
-		product.sortProductByPriceLowToHigh();
+	public void addTocartTest() {
+		product.addTocart();
 	}
 
 	@Test(priority = 4)
-	public void waitForProductsToReloadTest() {
-		product.waitForProductsToReload();
+	public void addMultipleProductsTest() {
+		int count = 0;
+		for (String item : products) {
+			product.searchProduct(item);
+			product.allProductList();
+			product.addTocart();
+			count++;
+			if (count >= 3) {
+				break;
+			}
+		}
 	}
 
 	@Test(priority = 5)
-	public void verifyFirstFivePricesSorted() {
-		Assert.assertTrue(product.verifyFirstFivePricesSorted(), "product price are not sorted in ascending order");
+	public void refreshCartPageTest() {
+		product.refreshCartPage();
 	}
 
 	@Test(priority = 6)
-	public void sortProductByPriceHighToLowTest() {
-		product.sortProductByPriceHighToLow();
+	public void openBagTest() {
+		product.openBag();
 	}
 
 	@Test(priority = 7)
-	public void verifyFirstFivePricesSortedDescending() {
-		Assert.assertTrue(product.verifyFirstFivePricesSortedDescending(),
-				"product price are not sorted in descending order");
+	public void removeProductTest() {
+		product.removeProduct();
 	}
 
-	/*-----------Negative Test Cases------------*/
 	@Test(priority = 8)
-	public void verifyAscendingSortingWithoutSelectingSortOptionTest() {
-		List<Integer> priceList = product.getFirstFiveProductPrices();
-		System.out.println("Prices without applying sorting:");
-		System.out.println(priceList);
-		Assert.assertFalse(product.verifyFirstFivePricesSorted(),
-				"Products should not be sorted when sort option is not applied");
+	public void visitHomePageTest() {
+		product.visitHomePage();
 	}
 
 	@Test(priority = 9)
-	public void verifyDescendingSortingWithoutSelectingSortOptionTest() {
-		List<Integer> priceList = product.getFirstFiveProductPrices();
-		System.out.println("Prices without applying descending sorting:");
-		System.out.println(priceList);
-		Assert.assertFalse(product.verifyFirstFivePricesSortedDescending(),
-				"Products should not be sorted in descending order without selecting sort option");
+	public void validateEmptyCartStateTest() {
+		product.validateEmptyCartState();
 	}
 
+	/* -----------------Negative Test Cases-------- */
 	@Test(priority = 10)
-	public void verifyPriceListIsNotEmptyTest() {
-		List<Integer> priceList = product.getFirstFiveProductPrices();
-		Assert.assertFalse(priceList.isEmpty(), "Price list should not be empty");
+	public void searchEmptyProductTest() {
+		product.searchProduct("");
 	}
 
 	@Test(priority = 11)
-	public void verifyLessThanFiveProductsScenarioTest() {
-		List<Integer> priceList = product.getFirstFiveProductPrices();
-		Assert.assertTrue(priceList.size() >= 5, "Less than 5 products displayed on the page");
+	public void searchInvalidProductTest() {
+		product.searchProduct("asdfghjkl12345");
 	}
 
 	@Test(priority = 12)
-	public void verifySortingFailsIfPageNotLoadedTest() {
-		product.sortProductByPriceLowToHigh();
-		List<Integer> priceList = product.getFirstFiveProductPrices();
-		Assert.assertNotNull(priceList, "Price list should not be null after sorting");
+	public void searchSpecialCharactersTest() {
+		product.searchProduct("@#$%^&*");
 	}
 
 	@Test(priority = 13)
-	public void verifyDescendingSortingWithoutReloadTest() {
-		product.sortProductByPriceHighToLow();
-		List<Integer> priceList = product.getFirstFiveProductPrices();
-		Assert.assertFalse(product.verifyFirstFivePricesSorted(),
-				"Ascending verification should fail for descending sorted list");
+	public void productListEmptyTest() {
+		product.searchProduct("invalidproductname");
+		product.allProductList();
 	}
 
 	@Test(priority = 14)
-	public void verifyAscendingSortingFailsForDescendingOrderTest() {
-		product.sortProductByPriceHighToLow();
-		Assert.assertFalse(product.verifyFirstFivePricesSorted(),
-				"Ascending order validation should fail for descending sorted products");
+	public void addProductWithoutSizeTest() {
+		product.searchProduct("Tshirt");
+		product.allProductList();
+		product.addTocart();
+	}
+
+	@Test(priority = 15)
+	public void addSameProductMultipleTimesTest() {
+		product.searchProduct(products[0]);
+		product.allProductList();
+		product.addTocart();
+		product.addTocart();
+	}
+
+	@Test(priority = 16)
+	public void removeFromEmptyCartTest() {
+		product.openBag();
+		product.removeProduct();
+	}
+
+	@Test(priority = 17)
+	public void refreshEmptyCartTest() {
+		product.openBag();
+		product.refreshCartPage();
+	}
+
+	@Test(priority = 18)
+	public void visitHomePageWithoutCartTest() {
+		product.visitHomePage();
+	}
+
+	@Test(priority = 19)
+	public void invalidFilePathTest() {
+		String[] products = ReadFileData.readProducts("invalid/path.txt");
+	}
+
+	@Test(priority = 20)
+	public void searchLongStringTest() {
+		product.searchProduct("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+	}
+
+	@Test(priority = 21)
+	public void validateEmptyCartWithoutAddingProductTest() {
+		product.openBag();
+		product.validateEmptyCartState();
 	}
 }

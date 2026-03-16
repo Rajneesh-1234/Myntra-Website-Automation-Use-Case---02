@@ -1,96 +1,113 @@
 package pages;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.FindBy;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 import base.BasePage;
+import utils.WaitUtils;
 
 public class ProductPage extends BasePage {
+
 	public ProductPage(WebDriver driver) {
 		super(driver);
 	}
 
-	@FindBy(xpath = "//a[@class='desktop-main'][normalize-space()='Men']")
-	private WebElement menCategory;
-	@FindBy(xpath = "//a[normalize-space()='Topwear']")
-	private WebElement topwear;
-	@FindBy(xpath = "//a[normalize-space()='T-Shirts']")
-	private WebElement tshirts;
+	@FindBy(xpath = "//input[@placeholder='Search for products, brands and more']")
+	private WebElement searchBox;
 
-	public void navigateToTshirts() {
-		Actions action = new Actions(driver);
-		action.moveToElement(menCategory).perform();
-		action.moveToElement(topwear).perform();
-		tshirts.click();
+	public void searchProduct(String itemName) {
+		WaitUtils.waitForElementToBeVisible(searchBox);
+		searchBox.clear();
+		searchBox.sendKeys(itemName);
+		searchBox.sendKeys(Keys.ENTER);
 	}
 
-	@FindBy(xpath = "//li[@class='product-base']")
+	@FindBy(xpath = "//div[@class='product-productMetaInfo']")
 	private List<WebElement> productList;
-	@FindBy(xpath = "//span[@class='product-discountedPrice']")
-	private List<WebElement> productPrices;
 
-	public List<Integer> getFirstFiveProductPrices() {
-		List<Integer> priceList = new ArrayList<>();
-		for (int i = 0; i < 5; i++) {
-			String priceText = productPrices.get(i).getText();
-			priceText = priceText.replace("Rs. ", "").replace(",", "");
-			int price = Integer.parseInt(priceText);
-			priceList.add(price);
+	public void allProductList() {
+		WaitUtils.waitForElementToBeVisible(productList.get(0));
+		System.out.println("Product Size: " + productList.size());
+		productList.get(0).click();
+		Set<String> windowHandles = driver.getWindowHandles();
+		for (String window : windowHandles) {
+			driver.switchTo().window(window);
 		}
-		return priceList;
 	}
 
-	@FindBy(xpath = "//div[@class='sort-sortBy']")
-	private WebElement sortDropDown;
-	@FindBy(xpath = "//label[contains(text(),'Price: Low to High')]")
-	private WebElement priceLowToHighOption;
+	@FindBy(xpath = "//div[normalize-space()='ADD TO BAG']")
+	private WebElement addToBag;
 
-	public List<Integer> sortProductByPriceLowToHigh() {
-		sortDropDown.click();
-		priceLowToHighOption.click();
-		waitForProductsToReload();
-		return getFirstFiveProductPrices();
+	public void addTocart() {
+		WaitUtils.waitForElementToBeClickable(addToBag);
+		addToBag.click();
 	}
 
-	public void waitForProductsToReload() {
-		WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+	@FindBy(xpath = "//span[normalize-space()='Bag']")
+	private WebElement bagButton;
 
-	    wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(
-	            By.xpath("//li[@class='product-base']")));
-
+	public void openBag() {
+		bagButton.click();
 	}
 
-	public boolean verifyFirstFivePricesSorted() {
-		List<Integer> actualPrices = sortProductByPriceLowToHigh();
-		List<Integer> sortedPrices = new ArrayList<>(actualPrices);
-		Collections.sort(sortedPrices);
-		return actualPrices.equals(sortedPrices);
+	public void refreshCartPage() {
+		driver.navigate().refresh();
 	}
 
-	@FindBy(xpath = "//label[contains(text(),'Price: High to Low')]")
-	private WebElement priceHighToLowOption;
+	@FindBy(xpath = "//button[normalize-space()='REMOVE']")
+	private List<WebElement> removeButtons;
+	@FindBy(xpath = "//button[normalize-space()='REMOVE']")
+	private WebElement confirmRemoveButton;
+	@FindBy(xpath = "//div[contains(text(),'ADD ITEMS FROM WISHLIST')]")
+	private WebElement addToWishlist;
 
-	public List<Integer> sortProductByPriceHighToLow() {
-		sortDropDown.click();
-		priceHighToLowOption.click();
-		waitForProductsToReload();
-		return getFirstFiveProductPrices();
+	public void removeProduct() {
+		WaitUtils.waitForUrlContains("cart");
+		List<WebElement> removeBtns = driver.findElements(By.xpath("//button[text()='REMOVE']"));
+		while (removeBtns.size() > 0) {
+			WaitUtils.waitForElementToBeClickable(removeBtns.get(0));
+			removeBtns.get(0).click();
+			WebElement confirmBtn = driver.findElement(By.xpath("//div[@role='dialog']//button[text()='REMOVE']"));
+			WaitUtils.waitForElementToBeClickable(confirmBtn);
+			confirmBtn.click();
+			removeBtns = driver.findElements(By.xpath("//button[text()='REMOVE']"));
+		}
+	}
+	public void visitHomePage() {
+		driver.navigate().to("https://www.myntra.com/");
 	}
 
-	public boolean verifyFirstFivePricesSortedDescending() {
-		List<Integer> actualPrices = sortProductByPriceHighToLow();
-		List<Integer> sortedPrices = new ArrayList<>(actualPrices);
-		Collections.sort(sortedPrices, Collections.reverseOrder());
-		return actualPrices.equals(sortedPrices);
+	@FindBy(xpath = "//div[contains(text(),'ADD ITEMS FROM WISHLIST')]")
+	private WebElement emptyCartMessage;
+	@FindBy(xpath = "//span[contains(@class,'desktop-badge')]")
+	private WebElement cartBadge;
+	@FindBy(xpath = "//a[contains(@class,'desktop-cart')]")
+	private WebElement cartIcon;
+
+	public void validateEmptyCartState() {
+		WaitUtils.waitForUrlContains("cart");
+		WaitUtils.waitForElementToBeVisible(emptyCartMessage);
+		if (emptyCartMessage.isDisplayed()) {
+			System.out.println("Cart is empty");
+		} else {
+			System.out.println("Cart is NOT empty");
+		}
+		try {
+			WaitUtils.waitForElementToBeVisible(cartBadge);
+			String badgeCount = cartBadge.getText();
+			if (badgeCount.equals("0")) {
+				System.out.println("Cart badge count is 0");
+			} else {
+				System.out.println("Cart badge count is: " + badgeCount);
+			}
+		} catch (Exception e) {
+			System.out.println("Cart badge not visible → Cart is empty");
+		}
 	}
 }
